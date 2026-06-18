@@ -10,12 +10,234 @@ const parser = new XMLParser({
 });
 
 const ROOT = path.join(__dirname, "..");
-const TRACKS_DIR = path.join(ROOT, "tracks_originals");
+const TRACKS_DIR = path.join(ROOT, "..", "tracks_originals");
 const OUTPUT = path.join(ROOT, "tracks.json");
 
 const CATEGORIES = ["walk", "cycle", "land", "boat", "plane"];
 
 const tracks = [];
+
+const HOME_LAT = 41.73164237532438;
+const HOME_LON = 1.8281919505607196;
+
+const HOME_RADIUS_METERS = 150;
+
+const SPIKE_DISTANCE_METERS = 200;
+const SPIKE_RETURN_METERS = 30;
+
+function distanceMeters(lat1, lon1, lat2, lon2) {
+
+  const R = 6371000;
+
+  const dLat =
+    (lat2 - lat1) * Math.PI / 180;
+
+  const dLon =
+    (lon2 - lon1) * Math.PI / 180;
+
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) *
+    Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) ** 2;
+
+  return R * 2 * Math.atan2(
+    Math.sqrt(a),
+    Math.sqrt(1 - a)
+  );
+}
+
+function trimHomeEndpoints(points) {
+
+  let start = 0;
+
+  while (
+    start < points.length &&
+    distanceMeters(
+      points[start].lat,
+      points[start].lon,
+      HOME_LAT,
+      HOME_LON
+    ) < HOME_RADIUS_METERS
+  ) {
+    start++;
+  }
+
+  let end = points.length - 1;
+
+  while (
+    end > start &&
+    distanceMeters(
+      points[end][0],
+      points[end][1],
+      HOME_LAT,
+      HOME_LON
+    ) < HOME_RADIUS_METERS
+  ) {
+    end--;
+  }
+
+  return points.slice(start, end + 1);
+}
+
+function removeGpsSpikes(points) {
+
+  if (points.length < 3)
+    return points;
+
+  const cleaned = [points[0]];
+
+  for (
+    let i = 1;
+    i < points.length - 1;
+    i++
+  ) {
+
+    const A = points[i - 1];
+    const B = points[i];
+    const C = points[i + 1];
+
+    const AB = distanceMeters(
+      A.lat, A.lon,
+      B.lat, B.lon
+    );
+
+    const BC = distanceMeters(
+      B.lat, B.lon,
+      C.lat, C.lon
+    );
+
+    const AC = distanceMeters(
+      A.lat, A.lon,
+      C.lat, C.lon
+    );
+
+    const isSpike =
+      AB > SPIKE_DISTANCE_METERS &&
+      BC > SPIKE_DISTANCE_METERS &&
+      AC < SPIKE_RETURN_METERS;
+
+    if (!isSpike) {
+      cleaned.push(B);
+    }
+
+  }
+
+  cleaned.push(
+    points[points.length - 1]
+  );
+
+  return cleaned;
+}
+
+function removeImpossibleSpeeds(points, category) {
+
+  const limits = {
+    walk: 15,
+    cycle: 70,
+    land: 180,
+    boat: 120,
+    plane: 1200
+  };
+
+  const maxSpeed =
+    limits[category] || 200;
+
+  if (points.length < 2)
+    return points;
+
+  const cleaned = [points[0]];
+
+  for (let i = 1; i < points.length; i++) {
+
+    const prev =
+      cleaned[cleaned.length - 1];
+
+    const curr = points[i];
+
+    if (!prev.time || !curr.time) {
+      cleaned.push(curr);
+      continue;
+    }
+
+    const distance =
+      distanceMeters(
+        prev.lat,
+        prev.lon,
+        curr.lat,
+        curr.lon
+      );
+
+    const dt =
+      (
+        new Date(curr.time) -
+        new Date(prev.time)
+      ) / 1000;
+
+    if (dt <= 0) continue;
+
+    const speed =
+      distance / dt * 3.6;
+
+    if (speed <= maxSpeed) {
+      cleaned.push(curr);
+    }
+  }
+
+  return cleaned;
+}
+
+function removeDetourSpikes(points) {
+
+  if (points.length < 3)
+    return points;
+
+  const cleaned = [points[0]];
+
+  for (
+    let i = 1;
+    i < points.length - 1;
+    i++
+  ) {
+
+    const A = points[i - 1];
+    const B = points[i];
+    const C = points[i + 1];
+
+    const AB =
+      distanceMeters(
+        A.lat, A.lon,
+        B.lat, B.lon
+      );
+
+    const BC =
+      distanceMeters(
+        B.lat, B.lon,
+        C.lat, C.lon
+      );
+
+    const AC =
+      distanceMeters(
+        A.lat, A.lon,
+        C.lat, C.lon
+      );
+
+    const isDetour =
+      AB > 100 &&
+      BC > 100 &&
+      (AB + BC) > (AC * 5);
+
+    if (!isDetour) {
+      cleaned.push(B);
+    }
+
+  }
+  cleaned.push(
+    points[points.length - 1]
+  );
+
+  return cleaned;
+}
 
 function asArray(v) {
   if (!v) return [];
@@ -42,7 +264,7 @@ function extractDate(obj) {
   return null;
 }
 
-function extractGpxTracks(obj) {
+function extractGpxTracks(obj, category) {
 
   const trks = asArray(obj.gpx?.trk);
 
@@ -61,14 +283,18 @@ function extractGpxTracks(obj) {
       asArray(seg.trkpt).forEach(pt => {
 
         const lat = parseFloat(pt.lat);
-        const lon = parseFloat(pt.lon);
+const lon = parseFloat(pt.lon);
 
-        if (
-          Number.isFinite(lat) &&
-          Number.isFinite(lon)
-        ) {
-          points.push([lat, lon]);
-        }
+if (
+  Number.isFinite(lat) &&
+  Number.isFinite(lon)
+) {
+  points.push({
+    lat,
+    lon,
+    time: pt.time || null
+  });
+}
 
       });
 
@@ -76,13 +302,36 @@ function extractGpxTracks(obj) {
 
     if (points.length >= 2) {
 
-      results.push({
-        name:
-          trk.name ||
-          `Track ${String(index + 1).padStart(2, "0")}`,
-        date: extractDate(obj),
-        points
-      });
+      let cleanedPoints = points;
+
+cleanedPoints =
+  removeGpsSpikes(cleanedPoints);
+
+cleanedPoints =
+  removeDetourSpikes(cleanedPoints);
+
+cleanedPoints =
+  removeImpossibleSpeeds(
+    cleanedPoints,
+    category
+  );
+
+cleanedPoints =
+  trimHomeEndpoints(cleanedPoints);
+
+if (cleanedPoints.length >= 2) {
+
+  results.push({
+    name:
+      trk.name ||
+      `Track ${String(index + 1).padStart(2, "0")}`,
+    date: extractDate(obj),
+    points: cleanedPoints.map(
+      p => [p.lat, p.lon]
+    )
+  });
+
+}
 
     }
 
@@ -144,7 +393,7 @@ function processFile(filePath, category) {
 
     if (obj.gpx) {
 
-  const gpxTracks = extractGpxTracks(obj);
+  const gpxTracks = extractGpxTracks(obj, category);
 
   if (!gpxTracks.length) {
 
