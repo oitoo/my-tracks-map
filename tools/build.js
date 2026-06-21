@@ -3,6 +3,8 @@
 //                             //
 //       tools/build.js        //
 
+require("dotenv").config();
+
 const fs = require("fs");
 const path = require("path");
 const { XMLParser } = require("fast-xml-parser");
@@ -20,8 +22,8 @@ const CATEGORIES = ["walk", "cycle", "land", "boat", "plane"];
 
 const tracks = [];
 
-const HOME_LAT = 41.73164237532438;
-const HOME_LON = 1.8281919505607196;
+const HOME_LAT = Number(process.env.HOME_LAT);
+const HOME_LON = Number(process.env.HOME_LON);
 
 const HOME_RADIUS_METERS = 150;
 
