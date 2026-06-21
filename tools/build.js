@@ -1,4 +1,7 @@
-// tools/build.js
+//     To regenerate map       //
+//    after adding new gpx.    //
+//                             //
+//       tools/build.js        //
 
 const fs = require("fs");
 const path = require("path");
@@ -79,6 +82,18 @@ function trimHomeEndpoints(points) {
   ) {
     end--;
   }
+
+
+  // Randomly extend the cut so it doesn't always stop at the same place
+  const randomTrim = (min, max) =>
+    Math.floor(Math.random() * (max - min + 1)) + min;
+
+  // Random extra points to remove (adjust range to your GPS density)
+  const extraStart = randomTrim(5, 25);
+  const extraEnd = randomTrim(5, 25);
+
+  start = Math.min(start + extraStart, end - 10);
+  end = Math.max(end - extraEnd, start + 10);
 
   return points.slice(start, end + 1);
 }
