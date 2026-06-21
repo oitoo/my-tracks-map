@@ -1,7 +1,13 @@
-//     To regenerate map       //
-//    after adding new gpx.    //
-//                             //
-//       tools/build.js        //
+//////////////////////////////////////////////
+//           Per regenerar el mapa          //
+//          després d'afegir nous GPX.      //
+//                                          //
+//               tools/build.js             //
+//                                          //
+//      git add .                           //
+//      git commit -m "Afegits nous GPX"    //
+//      git push                            //
+//////////////////////////////////////////////
 
 require("dotenv").config();
 
