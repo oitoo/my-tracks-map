@@ -25,6 +25,9 @@ const HOME_RADIUS_METERS = 150;
 const SPIKE_DISTANCE_METERS = 200;
 const SPIKE_RETURN_METERS = 30;
 
+const STOP_RADIUS_METERS = 30;
+const STOP_TIME_SECONDS = 120;
+
 function distanceMeters(lat1, lon1, lat2, lon2) {
 
   const R = 6371000;
@@ -68,8 +71,8 @@ function trimHomeEndpoints(points) {
   while (
     end > start &&
     distanceMeters(
-      points[end][0],
-      points[end][1],
+      points[end].lat,
+      points[end].lon,
       HOME_LAT,
       HOME_LON
     ) < HOME_RADIUS_METERS
@@ -185,6 +188,90 @@ function removeImpossibleSpeeds(points, category) {
   }
 
   return cleaned;
+}
+
+function collapseStationaryClusters(points, category) {
+
+  if (
+    category !== "walk" &&
+    category !== "cycle"
+  ) {
+    return points;
+  }
+
+  if (points.length < 2)
+    return points;
+
+  const result = [];
+
+  let i = 0;
+
+  while (i < points.length) {
+
+    const start = points[i];
+
+    if (!start.time) {
+      result.push(start);
+      i++;
+      continue;
+    }
+
+    let foundStop = false;
+
+    for (let j = i + 1; j < points.length; j++) {
+
+      if (!points[j].time)
+        break;
+
+      const elapsed =
+        (
+          new Date(points[j].time) -
+          new Date(start.time)
+        ) / 1000;
+
+      const dist =
+        distanceMeters(
+          start.lat,
+          start.lon,
+          points[j].lat,
+          points[j].lon
+        );
+
+      if (
+        elapsed >= STOP_TIME_SECONDS &&
+        dist <= STOP_RADIUS_METERS
+      ) {
+
+        result.push(start);
+
+        while (
+          j < points.length &&
+          distanceMeters(
+            start.lat,
+            start.lon,
+            points[j].lat,
+            points[j].lon
+          ) <= STOP_RADIUS_METERS
+        ) {
+          j++;
+        }
+
+        i = j;
+        foundStop = true;
+        break;
+      }
+
+      if (dist > STOP_RADIUS_METERS)
+        break;
+    }
+
+    if (!foundStop) {
+      result.push(start);
+      i++;
+    }
+  }
+
+  return result;
 }
 
 function removeDetourSpikes(points) {
@@ -305,13 +392,19 @@ if (
       let cleanedPoints = points;
 
 cleanedPoints =
+  removeImpossibleSpeeds(
+    cleanedPoints,
+    category
+  );
+
+cleanedPoints =
   removeGpsSpikes(cleanedPoints);
 
 cleanedPoints =
   removeDetourSpikes(cleanedPoints);
 
 cleanedPoints =
-  removeImpossibleSpeeds(
+  collapseStationaryClusters(
     cleanedPoints,
     category
   );
