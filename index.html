@@ -19,6 +19,26 @@
     /* Iniciar servidor */
     /* npx http-server */
 
+    #loading {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+
+      z-index: 10000;
+
+      background: white;
+      padding: 10px 15px;
+
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+
+      font-family: Arial, sans-serif;
+      font-size: 13px;
+
+      display: none;
+    }
+
     /* =========================
        MAP
     ========================= */
@@ -121,6 +141,10 @@
 <body>
 
 <!-- INFO BOX -->
+<div id="loading">
+  Loading...
+</div>
+
 <div id="info">
   <div id="title">Click a route</div>
   <div id="meta"></div>
@@ -128,12 +152,12 @@
 
 <!-- FILTER BOX -->
 <div id="filters">
-  <label><input type="checkbox" value="walk" checked> Walk</label>
-  <label><input type="checkbox" value="cycle" checked> Cycle</label>
-  <label><input type="checkbox" value="land" checked> Land</label>
-  <label><input type="checkbox" value="boat" checked> Boat</label>
-  <label><input type="checkbox" value="train" checked> Train</label>
-  <label><input type="checkbox" value="plane" checked> Plane</label>
+  <label><input type="checkbox" value="walk"> Walk</label>
+  <label><input type="checkbox" value="cycle"> Cycle</label>
+  <label><input type="checkbox" value="land"> Land</label>
+  <label><input type="checkbox" value="boat"> Boat</label>
+  <label><input type="checkbox" value="train"> Train</label>
+  <label><input type="checkbox" value="plane"> Plane</label>
 </div>
 
 <!-- MAP -->
@@ -155,12 +179,12 @@
   const allLines = [];
 
   const categoryState = {
-    walk: true,
-    cycle: true,
-    land: true,
-    boat: true,
-    train: true,
-    plane: true
+    walk: false,
+    cycle: false,
+    land: false,
+    boat: false,
+    train: false,
+    plane: false
 };
 
   // =========================
@@ -246,14 +270,49 @@
     });
   }
 
+  function showLoading(text) {
+
+    const el =
+      document.getElementById("loading");
+
+    el.innerText = text;
+    el.style.display = "block";
+
+  }
+
+  function hideLoading() {
+
+    document.getElementById("loading")
+      .style.display = "none";
+
+  }
+
   // =========================
   // LOAD TRACKS
   // =========================
-  fetch("tracks.json")
+  const loadedCategories = {};
+
+function loadCategory(category) {
+
+  if (loadedCategories[category]) {
+
+    updateVisibility();
+    return;
+  }
+
+  showLoading(
+    `Loading ${category} tracks...`
+  );
+
+  fetch(`tracks/${category}.json.gz`)
     .then(r => r.json())
     .then(tracks => {
 
-      console.log("Loaded tracks:", tracks.length);
+      console.log(
+        "Loaded:",
+        category,
+        tracks.length
+      );
 
       tracks.forEach(track => {
 
@@ -264,18 +323,23 @@
             p[0] / 100000,
             p[1] / 100000
           ]),
+
           {
             color: getColor(track.category),
             weight: 2,
             opacity: 0.6
           }
-        ).addTo(map);
+        );
 
         line._track = track;
         allLines.push(line);
 
-        // CLICK
+        if (categoryState[category]) {
+          line.addTo(map);
+        }
+
         line.on("click", (e) => {
+
           if (!isVisible(line)) return;
 
           L.DomEvent.stopPropagation(e);
@@ -286,31 +350,31 @@
           applyStyles();
 
           map.fitBounds(line.getBounds(), {
-            padding: [20, 20]
+            padding: [20,20]
           });
+
         });
 
-        // HOVER
-        line.on("mouseover", () => {
-          if (!isVisible(line)) return;
-          if (activeLine && activeLine !== line) return;
-
-          line.setStyle({ opacity: 1, weight: 4 });
-        });
-
-        line.on("mouseout", () => {
-          if (!isVisible(line)) return;
-          if (activeLine && activeLine !== line) return;
-
-          line.setStyle({
-            opacity: activeLine ? 1 : 0.6,
-            weight: 2
-          });
-        });
+        hideLoading();
 
       });
 
+      loadedCategories[category] = true;
+
+      if (allLines.length > 0) {
+
+        const group = L.featureGroup(allLines);
+
+        map.fitBounds(
+          group.getBounds(),
+          {
+            padding: [20,20]
+          }
+        );
+
+      }
     });
+}
 
   // =========================
   // RESET ON MAP CLICK
@@ -325,19 +389,27 @@
   // FILTER EVENTS
   // =========================
   document.querySelectorAll("#filters input").forEach(cb => {
-    cb.addEventListener("change", (e) => {
 
-      categoryState[e.target.value] = e.target.checked;
+  cb.addEventListener("change", (e) => {
+
+    const category = e.target.value;
+
+    categoryState[category] =
+      e.target.checked;
+
+    if (e.target.checked) {
+
+      loadCategory(category);
+
+    } else {
 
       updateVisibility();
 
-      if (activeLine && !map.hasLayer(activeLine)) {
-        activeLine = null;
-        updateInfo(null);
-        applyStyles();
-      }
-    });
+    }
+
   });
+
+});
 
 </script>
 

@@ -3,6 +3,7 @@ require("dotenv").config();
 
 const fs = require("fs");
 const path = require("path");
+const zlib = require("zlib");
 const { XMLParser } = require("fast-xml-parser");
 
 const parser = new XMLParser({
@@ -12,7 +13,7 @@ const parser = new XMLParser({
 
 const ROOT = path.join(__dirname, "..");
 const TRACKS_DIR = path.join(ROOT, "..", "tracks_originals");
-const OUTPUT = path.join(ROOT, "tracks.json");
+const OUTPUT_DIR = path.join(ROOT, "tracks");
 
 const CATEGORIES = ["walk", "cycle", "land", "train", "boat", "plane"];
 
@@ -612,14 +613,38 @@ tracks.sort(
     drawOrder[b.category]
 );
 
-fs.writeFileSync(
-  OUTPUT,
-  JSON.stringify(tracks)
-);
+if (!fs.existsSync(OUTPUT_DIR)) {
+  fs.mkdirSync(OUTPUT_DIR);
+}
+
+CATEGORIES.forEach(category => {
+
+  const categoryTracks =
+    tracks.filter(
+      t => t.category === category
+    );
+
+  const json =
+    JSON.stringify(categoryTracks);
+
+  fs.writeFileSync(
+    path.join(
+      OUTPUT_DIR,
+      `${category}.json.gz`
+    ),
+    zlib.gzipSync(json)
+  );
+
+  console.log(
+    `📄 ${category}.json: ${categoryTracks.length} tracks`
+  );
+
+});
+
 
 console.log(
   `\n🎉 Built ${tracks.length} tracks`
 );
 console.log(
-  `📄 Saved: ${OUTPUT}`
+  `📁 Saved in: ${OUTPUT_DIR}`
 );
