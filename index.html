@@ -132,6 +132,7 @@
   <label><input type="checkbox" value="cycle" checked> Cycle</label>
   <label><input type="checkbox" value="land" checked> Land</label>
   <label><input type="checkbox" value="boat" checked> Boat</label>
+  <label><input type="checkbox" value="train" checked> Train</label>
   <label><input type="checkbox" value="plane" checked> Plane</label>
 </div>
 
@@ -158,8 +159,9 @@
     cycle: true,
     land: true,
     boat: true,
+    train: true,
     plane: true
-  };
+};
 
   // =========================
   // UTIL
@@ -181,6 +183,7 @@
       : cat === "cycle" ? "orange"
       : cat === "land" ? "red"
       : cat === "boat" ? "blue"
+      : cat === "train" ? "purple"
       : cat === "plane" ? "yellow"
       : "gray";
   }

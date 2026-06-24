@@ -1,13 +1,3 @@
-//////////////////////////////////////////////
-//           Per regenerar el mapa          //
-//          després d'afegir nous GPX.      //
-//                                          //
-//               tools/build.js             //
-//                                          //
-//      git add .                           //
-//      git commit -m "Afegits nous GPX"    //
-//      git push                            //
-//////////////////////////////////////////////
 
 require("dotenv").config();
 
@@ -24,7 +14,7 @@ const ROOT = path.join(__dirname, "..");
 const TRACKS_DIR = path.join(ROOT, "..", "tracks_originals");
 const OUTPUT = path.join(ROOT, "tracks.json");
 
-const CATEGORIES = ["walk", "cycle", "land", "boat", "plane"];
+const CATEGORIES = ["walk", "cycle", "land", "train", "boat", "plane"];
 
 const tracks = [];
 
@@ -609,9 +599,10 @@ CATEGORIES.forEach(category => {
 const drawOrder = {
   boat: 1,
   land: 2,
-  cycle: 3,
-  walk: 4,
-  plane: 5
+  train: 3,
+  cycle: 4,
+  walk: 5,
+  plane: 6
 };
 
 tracks.sort(
