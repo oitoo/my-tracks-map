@@ -205,7 +205,7 @@
       return;
     }
 
-    titleEl.innerText = track.name || track.file || "Unnamed route";
+    titleEl.innerText = track.name || "Unnamed route";
     metaEl.innerText = formatDate(track.date);
   }
 
@@ -260,7 +260,10 @@
         if (!track.points?.length) return;
 
         const line = L.polyline(
-          track.points.map(p => [p[0], p[1]]),
+          track.points.map(p => [
+            p[0] / 100000,
+            p[1] / 100000
+          ]),
           {
             color: getColor(track.category),
             weight: 2,

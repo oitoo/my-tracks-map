@@ -433,7 +433,10 @@ if (cleanedPoints.length >= 2) {
       `Track ${String(index + 1).padStart(2, "0")}`,
     date: extractDate(obj),
     points: cleanedPoints.map(
-      p => [p.lat, p.lon]
+      p => [
+        Math.round(p.lat * 100000),
+        Math.round(p.lon * 100000)
+      ]
     )
   });
 
@@ -514,8 +517,6 @@ function processFile(filePath, category) {
   gpxTracks.forEach((track, index) => {
 
     tracks.push({
-
-      file: path.basename(filePath),
 
       category,
 
