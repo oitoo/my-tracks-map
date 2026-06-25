@@ -628,11 +628,8 @@ CATEGORIES.forEach(category => {
     JSON.stringify(categoryTracks);
 
   fs.writeFileSync(
-    path.join(
-      OUTPUT_DIR,
-      `${category}.json`
-    ),
-    zlib.gzipSync(json)
+    outputFile,
+    JSON.stringify(track)
   );
 
   console.log(
