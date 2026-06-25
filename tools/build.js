@@ -3,7 +3,6 @@ require("dotenv").config();
 
 const fs = require("fs");
 const path = require("path");
-const zlib = require("zlib");
 const { XMLParser } = require("fast-xml-parser");
 
 const parser = new XMLParser({
@@ -627,9 +626,16 @@ CATEGORIES.forEach(category => {
   const json =
     JSON.stringify(categoryTracks);
 
+  const outputFile =
+    path.join(
+      OUTPUT_DIR,
+      `${category}.json`
+    );
+
   fs.writeFileSync(
     outputFile,
-    JSON.stringify(track)
+    json,
+    "utf8"
   );
 
   console.log(
