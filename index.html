@@ -304,7 +304,7 @@ function loadCategory(category) {
     `Loading ${category} tracks...`
   );
 
-  fetch(`tracks/${category}.json.gz`)
+  fetch(`tracks/${category}.json`)
     .then(r => r.json())
     .then(tracks => {
 
