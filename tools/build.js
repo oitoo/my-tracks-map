@@ -630,7 +630,7 @@ CATEGORIES.forEach(category => {
   fs.writeFileSync(
     path.join(
       OUTPUT_DIR,
-      `${category}.json.gz`
+      `${category}.json`
     ),
     zlib.gzipSync(json)
   );
