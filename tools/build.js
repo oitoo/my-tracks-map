@@ -152,6 +152,7 @@ function removeImpossibleSpeeds(points, category) {
     walk: 15,
     cycle: 70,
     land: 180,
+    train: 180,
     boat: 120,
     plane: 1200
   };

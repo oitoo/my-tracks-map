@@ -155,8 +155,8 @@
   <label><input type="checkbox" value="walk"> Walk</label>
   <label><input type="checkbox" value="cycle"> Cycle</label>
   <label><input type="checkbox" value="land"> Land</label>
-  <label><input type="checkbox" value="boat"> Boat</label>
   <label><input type="checkbox" value="train"> Train</label>
+  <label><input type="checkbox" value="boat"> Boat</label>
   <label><input type="checkbox" value="plane"> Plane</label>
 </div>
 
@@ -182,8 +182,8 @@
     walk: false,
     cycle: false,
     land: false,
-    boat: false,
     train: false,
+    boat: false,
     plane: false
 };
 
@@ -206,8 +206,8 @@
     return cat === "walk" ? "green"
       : cat === "cycle" ? "orange"
       : cat === "land" ? "red"
+      : cat === "train" ? "purple"      
       : cat === "boat" ? "blue"
-      : cat === "train" ? "purple"
       : cat === "plane" ? "yellow"
       : "gray";
   }
